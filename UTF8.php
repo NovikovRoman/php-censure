@@ -2366,10 +2366,11 @@ class UTF8
 			#charset_from
 			if ($charset_from === 'UTF-16' || $charset_from === 'UCS-2')  return self::_convert_from_utf16($data);
 			if ($charset_from === 'cp1251' || $charset_from === 'cp1259') return strtr($data, self::$cp1259_table);
-			if ($charset_from === 'koi8-r' || $charset_from === 'KOI8-R') return strtr(convert_cyr_string($data, 'k', 'w'), self::$cp1259_table);
-			if ($charset_from === 'iso8859-5') return strtr(convert_cyr_string($data, 'i', 'w'), self::$cp1259_table);
-			if ($charset_from === 'cp866') return strtr(convert_cyr_string($data, 'a', 'w'), self::$cp1259_table);
-			if ($charset_from === 'mac-cyrillic') return strtr(convert_cyr_string($data, 'm', 'w'), self::$cp1259_table);
+			if (in_array(uppercase($charset_from), ['KOI8-R', 'ISO8859-5', 'CP866'])) {
+				return strtr(mb_convert_encoding($data, "windows-1251", uppercase($charset_from)),
+					self::$cp1259_table);
+			}
+			if ($charset_from === 'mac-cyrillic') return iconv('MacCyrillic', "windows-1251", $data);
 
 			#charset_to
 			if ($charset_to === 'cp1251' || $charset_to === 'cp1259') return strtr($data, array_flip(self::$cp1259_table));
@@ -2899,15 +2900,15 @@ class UTF8
 		switch (strlen($char))
 		{
 			case 1 : return $cache[$char] = ord($char);
-			case 2 : return $cache[$char] = (ord($char{1}) & 63) |
-											((ord($char{0}) & 31) << 6);
-			case 3 : return $cache[$char] = (ord($char{2}) & 63) |
-											((ord($char{1}) & 63) << 6) |
-											((ord($char{0}) & 15) << 12);
-			case 4 : return $cache[$char] = (ord($char{3}) & 63) |
-											((ord($char{2}) & 63) << 6) |
-											((ord($char{1}) & 63) << 12) |
-											((ord($char{0}) & 7)  << 18);
+			case 2 : return $cache[$char] = (ord($char[1]) & 63) |
+											((ord($char[0]) & 31) << 6);
+			case 3 : return $cache[$char] = (ord($char[2]) & 63) |
+											((ord($char[1]) & 63) << 6) |
+											((ord($char[0]) & 15) << 12);
+			case 4 : return $cache[$char] = (ord($char[3]) & 63) |
+											((ord($char[2]) & 63) << 6) |
+											((ord($char[1]) & 63) << 12) |
+											((ord($char[0]) & 7)  << 18);
 			default :
 				trigger_error('Character 0x' . bin2hex($char) . ' is not UTF-8!', E_USER_WARNING);
 				return false;
